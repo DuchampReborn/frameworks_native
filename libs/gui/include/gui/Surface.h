@@ -920,6 +920,11 @@ protected:
 
     // The frame id of the last frame replaced by bufferQueueProducer::queueBuffer
     std::optional<uint64_t> mLastReplacedFrameId;
+
+    #ifdef MTK_GED_KPI
+    pid_t mPid;
+    bool mIsSurfaceFlinger;
+    #endif
 };
 
 } // namespace android
