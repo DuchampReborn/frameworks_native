@@ -1018,9 +1018,8 @@ compositionengine::OutputLayer* Output::findLayerRequestingBackgroundComposition
             return nullptr;
         }
 
-        // If RenderEngine cannot render protected content, we cannot blur.
-        if (compState->hasProtectedContent &&
-            !getCompositionEngine().getRenderEngine().supportsProtectedContent()) {
+       // Bypass background blur evaluation whenever protected/DRM content is present
+        if (compState->hasProtectedContent) {
             return nullptr;
         }
         if (compState->isOpaque) {
@@ -1573,7 +1572,17 @@ std::vector<LayerFE::LayerSettings> Output::generateClientCompositionRequests(
     const Region viewportRegion(outputState.layerStackSpace.getContent());
     bool firstLayer = true;
 
-    bool disableBlursWholesale = false;
+// Check if any visible layer contains protected/DRM content
+    bool hasProtectedContentOnDisplay = std::any_of(
+            getOutputLayersOrderedByZ().begin(),
+            getOutputLayersOrderedByZ().end(),
+            [](const auto* layer) {
+                const auto* state = layer->getLayerFE().getCompositionState();
+                return state && state->hasProtectedContent;
+            });
+
+    // Disable blurs globally if DRM video is playing or a sideband stream is active
+    bool disableBlursWholesale = hasProtectedContentOnDisplay;
     uint64_t previousOverrideBufferId = 0;
 
     for (auto* layer : getOutputLayersOrderedByZ()) {
